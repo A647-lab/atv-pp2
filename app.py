@@ -26,16 +26,16 @@ def home():
                 'data_fim': data_fim
             }
             response = supabase.table('atividade').insert(book).execute()
-            if response.error:
-                print("Erro ao adicionar livro:", response.error)
+            if response.status_code != 201:
+                print("Erro ao adicionar livro:", response.data)
         except Exception as e:
             print("Falha ao adicionar livro")
             print(e)
 
     # Consultando todos os livros
     response = supabase.table('atividade').select('*').execute()
-    if response.error:
-        print("Erro ao consultar livros:", response.error)
+    if response.status_code != 200:
+        print("Erro ao consultar livros:", response.data)
         books = []
     else:
         books = response.data
@@ -59,8 +59,8 @@ def update():
             'data_fim': newdata_fim
         }).eq('title', oldtitle).execute()
 
-        if response.error:
-            print("Erro ao atualizar livro:", response.error)
+        if response.status_code != 200:
+            print("Erro ao atualizar livro:", response.data)
     except Exception as e:
         print("Falha ao atualizar o título do livro")
         print(e)
@@ -71,8 +71,8 @@ def delete():
     title = request.form.get("title")
     # Deletando o registro no Supabase
     response = supabase.table('atividade').delete().eq('title', title).execute()
-    if response.error:
-        print("Erro ao deletar livro:", response.error)
+    if response.status_code != 200:
+        print("Erro ao deletar livro:", response.data)
     return redirect("/")
 
 if __name__ == "__main__":
