@@ -25,13 +25,17 @@ def home():
                 'data_inicio': data_inicio,
                 'data_fim': data_fim
             }
-            supabase.table('atv').insert(book).execute()
+            response = supabase.table('Atv').insert(book).execute()
+            if response.error:
+                print("Erro ao adicionar livro:", response.error)
         except Exception as e:
             print("Failed to add book")
             print(e)
 
     # Consultando todos os livros
-    response = supabase.table('atv').select('*').execute()
+    response = supabase.table('Atv').select('*').execute()
+    if response.error:
+        print("Erro ao consultar livros:", response.error)
     books = response.data
 
     return render_template("index.html", books=books)
@@ -46,12 +50,15 @@ def update():
         newdata_fim = datetime.strptime(request.form.get("newdata_fim"), '%Y-%m-%d').date()
         
         # Atualizando o registro no Supabase
-        supabase.table('atv').update({
+        response = supabase.table('Atv').update({
             'title': newtitle,
             'descricao': newdescricao,
             'data_inicio': newdata_inicio,
             'data_fim': newdata_fim
         }).eq('title', oldtitle).execute()
+
+        if response.error:
+            print("Erro ao atualizar livro:", response.error)
     except Exception as e:
         print("Couldn't update book title")
         print(e)
@@ -61,8 +68,11 @@ def update():
 def delete():
     title = request.form.get("title")
     # Deletando o registro no Supabase
-    supabase.table('atv').delete().eq('title', title).execute()
+    response = supabase.table('Atv').delete().eq('title', title).execute()
+    if response.error:
+        print("Erro ao deletar livro:", response.error)
     return redirect("/")
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', debug=True)
