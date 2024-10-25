@@ -1,65 +1,40 @@
 import os
-from flask import Flask
-from flask import render_template
-from flask import request
-from flask import redirect
+from flask import Flask, render_template, request, redirect
 from datetime import datetime
-from flask_sqlalchemy import SQLAlchemy
+from supabase import create_client
 
-project_dir = os.path.dirname(os.path.abspath(__file__))
-database_file = "sqlite:///{}".format(os.path.join(project_dir,
-"bookdatabase.db"))
+# Configurações do Supabase
+url = "https://uqxenkoqehszhfjoqdby.supabase.co"  # Substitua pela URL do seu projeto
+key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxeGVua29xZWhzemhmam9xZGJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjk4NjIwNDMsImV4cCI6MjA0NTQzODA0M30.HgVtvI-9-o8CwfQe56l-pivtA5pO4D6uDpQcL_TYv0Q"  # Substitua pela sua chave de API
+supabase = create_client(url, key)
+
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = database_file
-db = SQLAlchemy(app)
 
-class Atv(db.Model):
-    title = db.Column(db.String(80), unique=True, nullable=False,
-    primary_key=True)
-    descricao = db.Column(db.String(80), unique=False, nullable=False,
-    primary_key=False)
-    data_inicio = db.Column(db.Date(), unique=False, nullable=False,
-    primary_key=False)
-    data_fim = db.Column(db.Date(), unique=False, nullable=False,
-    primary_key=False)
-    def __repr__(self):
-        return "<Title: {}>".format(self.title)
-    
 @app.route('/', methods=["GET", "POST"])
 def home():
     if request.method == "POST":
         try:
-            # Convert string dates to date objects
+            # Convertendo as strings de data para objetos de data
             data_inicio = datetime.strptime(request.form.get("data_inicio"), '%Y-%m-%d').date()
             data_fim = datetime.strptime(request.form.get("data_fim"), '%Y-%m-%d').date()
             
-            book = Atv(
-                title=request.form.get("title"),
-                descricao=request.form.get("descricao"),
-                data_inicio=data_inicio,
-                data_fim=data_fim
-            )
-            db.session.add(book)
-            db.session.commit()
+            # Inserindo o registro no Supabase
+            book = {
+                'title': request.form.get("title"),
+                'descricao': request.form.get("descricao"),
+                'data_inicio': data_inicio,
+                'data_fim': data_fim
+            }
+            supabase.table('Atv').insert(book).execute()
         except Exception as e:
             print("Failed to add book")
             print(e)
 
-    # Query all books
-    books = Atv.query.all()
-    
-    # Prepare a list of dictionaries for rendering
-    bookss = []
-    for book in books:
-        book_data = {
-            'title': book.title,
-            'descricao': book.descricao,
-            'data_inicio': book.data_inicio,
-            'data_fim': book.data_fim
-        }
-        bookss.append(book_data)
+    # Consultando todos os livros
+    response = supabase.table('Atv').select('*').execute()
+    books = response.data
 
-    return render_template("index.html", books=bookss)
+    return render_template("index.html", books=books)
 
 @app.route("/update", methods=["POST"])
 def update():
@@ -70,12 +45,13 @@ def update():
         newdata_inicio = datetime.strptime(request.form.get("newdata_inicio"), '%Y-%m-%d').date()
         newdata_fim = datetime.strptime(request.form.get("newdata_fim"), '%Y-%m-%d').date()
         
-        book = Atv.query.filter_by(title=oldtitle).first()
-        book.title = newtitle
-        book.descricao = newdescricao
-        book.data_inicio = newdata_inicio
-        book.data_fim = newdata_fim
-        db.session.commit()
+        # Atualizando o registro no Supabase
+        supabase.table('Atv').update({
+            'title': newtitle,
+            'descricao': newdescricao,
+            'data_inicio': newdata_inicio,
+            'data_fim': newdata_fim
+        }).eq('title', oldtitle).execute()
     except Exception as e:
         print("Couldn't update book title")
         print(e)
@@ -84,9 +60,8 @@ def update():
 @app.route("/delete", methods=["POST"])
 def delete():
     title = request.form.get("title")
-    book = Atv.query.filter_by(title=title).first()
-    db.session.delete(book)
-    db.session.commit()
+    # Deletando o registro no Supabase
+    supabase.table('Atv').delete().eq('title', title).execute()
     return redirect("/")
 
 if __name__ == "__main__":
