@@ -13,25 +13,42 @@ app = Flask(__name__)
 @app.route('/', methods=["GET", "POST"])
 def home():
     if request.method == "POST":
-        # Convertendo as strings de data para objetos de data
-        data_inicio = datetime.strptime(request.form.get("data_inicio"), '%Y-%m-%d').date()
-        data_fim = datetime.strptime(request.form.get("data_fim"), '%Y-%m-%d').date()
-        
-        # Verificar se o título já existe
         title = request.form.get("title")
-        existing_book = supabase.table('atividade').select('*').eq('title', title).execute()
+        descricao = request.form.get("descricao")
+        data_inicio = request.form.get("data_inicio")
+        data_fim = request.form.get("data_fim")
+        
+        if title and descricao and data_inicio and data_fim:
+            try:
+                # Convertendo as strings de data para o formato ISO
+                data_inicio = datetime.strptime(data_inicio, '%Y-%m-%d').date().isoformat()
+                data_fim = datetime.strptime(data_fim, '%Y-%m-%d').date().isoformat()
 
-        if existing_book.data:
-            print("Este título já existe. Não foi possível adicionar.")
+                # Verificar se o título já existe
+                existing_book = supabase.table('atividade').select('*').eq('title', title).execute()
+
+                if existing_book.data:
+                    print("Este título já existe. Não foi possível adicionar.")
+                else:
+                    # Inserindo o registro no Supabase
+                    book = {
+                        'title': title,
+                        'descricao': descricao,
+                        'data_inicio': data_inicio,
+                        'data_fim': data_fim
+                    }
+                    response = supabase.table('atividade').insert(book).execute()
+                    
+                    # Verificar se a inserção foi bem-sucedida
+                    if response.status_code == 201:
+                        print("Registro inserido com sucesso.")
+                    else:
+                        print("Erro ao inserir registro:", response.data)
+
+            except Exception as e:
+                print("Erro ao processar a solicitação:", e)
         else:
-            # Inserindo o registro no Supabase
-            book = {
-                'title': title,
-                'descricao': request.form.get("descricao"),
-                'data_inicio': data_inicio.isoformat(),
-                'data_fim': data_fim.isoformat()
-            }
-            supabase.table('atividade').insert(book).execute()
+            print("Por favor, preencha todos os campos.")
 
     # Consultando todos os livros
     response = supabase.table('atividade').select('*').execute()
@@ -41,27 +58,51 @@ def home():
 
 @app.route("/update", methods=["POST"])
 def update():
-    newtitle = request.form.get("newtitle")
     oldtitle = request.form.get("oldtitle")
+    newtitle = request.form.get("newtitle")
     newdescricao = request.form.get("newdescricao")
-    newdata_inicio = datetime.strptime(request.form.get("newdata_inicio"), '%Y-%m-%d').date()
-    newdata_fim = datetime.strptime(request.form.get("newdata_fim"), '%Y-%m-%d').date()
+    newdata_inicio = request.form.get("newdata_inicio")
+    newdata_fim = request.form.get("newdata_fim")
 
-    # Atualizando o registro no Supabase
-    supabase.table('atividade').update({
-        'title': newtitle,
-        'descricao': newdescricao,
-        'data_inicio': newdata_inicio.isoformat(),
-        'data_fim': newdata_fim.isoformat()
-    }).eq('title', oldtitle).execute()
+    if oldtitle and newtitle and newdescricao and newdata_inicio and newdata_fim:
+        try:
+            # Convertendo as strings de data para o formato ISO
+            newdata_inicio = datetime.strptime(newdata_inicio, '%Y-%m-%d').date().isoformat()
+            newdata_fim = datetime.strptime(newdata_fim, '%Y-%m-%d').date().isoformat()
+
+            # Atualizando o registro no Supabase
+            response = supabase.table('atividade').update({
+                'title': newtitle,
+                'descricao': newdescricao,
+                'data_inicio': newdata_inicio,
+                'data_fim': newdata_fim
+            }).eq('title', oldtitle).execute()
+
+            if response.status_code == 200:
+                print("Registro atualizado com sucesso.")
+            else:
+                print("Erro ao atualizar registro:", response.data)
+
+        except Exception as e:
+            print("Erro ao processar a atualização:", e)
 
     return redirect("/")
 
 @app.route("/delete", methods=["POST"])
 def delete():
     title = request.form.get("title")
-    # Deletando o registro no Supabase
-    supabase.table('atividade').delete().eq('title', title).execute()
+    if title:
+        try:
+            # Deletando o registro no Supabase
+            response = supabase.table('atividade').delete().eq('title', title).execute()
+            if response.status_code == 200:
+                print("Registro deletado com sucesso.")
+            else:
+                print("Erro ao deletar registro:", response.data)
+
+        except Exception as e:
+            print("Erro ao processar a exclusão:", e)
+
     return redirect("/")
 
 if __name__ == "__main__":
