@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, flash
 from datetime import datetime
 from supabase import create_client
 
@@ -9,6 +9,7 @@ key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVx
 supabase = create_client(url, key)
 
 app = Flask(__name__)
+app.secret_key = 'your_secret_key'  # Necessary for flash messages
 
 @app.route('/', methods=["GET", "POST"])
 def home():
@@ -17,7 +18,7 @@ def home():
         descricao = request.form.get("descricao")
         data_inicio = request.form.get("data_inicio")
         data_fim = request.form.get("data_fim")
-        
+
         if title and descricao and data_inicio and data_fim:
             try:
                 # Convertendo as strings de data para o formato ISO
@@ -28,7 +29,7 @@ def home():
                 existing_book = supabase.table('atividade').select('*').eq('title', title).execute()
 
                 if existing_book.data:
-                    print("Este título já existe. Não foi possível adicionar.")
+                    flash("Este título já existe. Não foi possível adicionar.")
                 else:
                     # Inserindo o registro no Supabase
                     book = {
@@ -38,17 +39,17 @@ def home():
                         'data_fim': data_fim
                     }
                     response = supabase.table('atividade').insert(book).execute()
-                    
+
                     # Verificar se a inserção foi bem-sucedida
                     if response.status_code == 201:
-                        print("Registro inserido com sucesso.")
+                        flash("Registro inserido com sucesso.")
                     else:
-                        print("Erro ao inserir registro:", response.data)
+                        flash("Erro ao inserir registro: " + str(response.data))
 
             except Exception as e:
-                print("Erro ao processar a solicitação:", e)
+                flash("Erro ao processar a solicitação: " + str(e))
         else:
-            print("Por favor, preencha todos os campos.")
+            flash("Por favor, preencha todos os campos.")
 
     # Consultando todos os livros
     response = supabase.table('atividade').select('*').execute()
@@ -79,12 +80,12 @@ def update():
             }).eq('title', oldtitle).execute()
 
             if response.status_code == 200:
-                print("Registro atualizado com sucesso.")
+                flash("Registro atualizado com sucesso.")
             else:
-                print("Erro ao atualizar registro:", response.data)
+                flash("Erro ao atualizar registro: " + str(response.data))
 
         except Exception as e:
-            print("Erro ao processar a atualização:", e)
+            flash("Erro ao processar a atualização: " + str(e))
 
     return redirect("/")
 
@@ -96,12 +97,12 @@ def delete():
             # Deletando o registro no Supabase
             response = supabase.table('atividade').delete().eq('title', title).execute()
             if response.status_code == 200:
-                print("Registro deletado com sucesso.")
+                flash("Registro deletado com sucesso.")
             else:
-                print("Erro ao deletar registro:", response.data)
+                flash("Erro ao deletar registro: " + str(response.data))
 
         except Exception as e:
-            print("Erro ao processar a exclusão:", e)
+            flash("Erro ao processar a exclusão: " + str(e))
 
     return redirect("/")
 
