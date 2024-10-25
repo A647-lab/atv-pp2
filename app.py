@@ -17,14 +17,21 @@ def home():
         data_inicio = datetime.strptime(request.form.get("data_inicio"), '%Y-%m-%d').date()
         data_fim = datetime.strptime(request.form.get("data_fim"), '%Y-%m-%d').date()
         
-        # Inserindo o registro no Supabase
-        book = {
-            'title': request.form.get("title"),
-            'descricao': request.form.get("descricao"),
-            'data_inicio': data_inicio.isoformat(),  # Converte para string ISO
-            'data_fim': data_fim.isoformat()  # Converte para string ISO
-        }
-        supabase.table('atividade').insert(book).execute()
+        # Verificar se o título já existe
+        title = request.form.get("title")
+        existing_book = supabase.table('atividade').select('*').eq('title', title).execute()
+
+        if existing_book.data:
+            print("Este título já existe. Não foi possível adicionar.")
+        else:
+            # Inserindo o registro no Supabase
+            book = {
+                'title': title,
+                'descricao': request.form.get("descricao"),
+                'data_inicio': data_inicio.isoformat(),
+                'data_fim': data_fim.isoformat()
+            }
+            supabase.table('atividade').insert(book).execute()
 
     # Consultando todos os livros
     response = supabase.table('atividade').select('*').execute()
@@ -39,13 +46,13 @@ def update():
     newdescricao = request.form.get("newdescricao")
     newdata_inicio = datetime.strptime(request.form.get("newdata_inicio"), '%Y-%m-%d').date()
     newdata_fim = datetime.strptime(request.form.get("newdata_fim"), '%Y-%m-%d').date()
-    
+
     # Atualizando o registro no Supabase
     supabase.table('atividade').update({
         'title': newtitle,
         'descricao': newdescricao,
-        'data_inicio': newdata_inicio.isoformat(),  # Converte para string ISO
-        'data_fim': newdata_fim.isoformat()  # Converte para string ISO
+        'data_inicio': newdata_inicio.isoformat(),
+        'data_fim': newdata_fim.isoformat()
     }).eq('title', oldtitle).execute()
 
     return redirect("/")
