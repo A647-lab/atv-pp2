@@ -10,6 +10,10 @@ supabase = create_client(url, key)
 
 app = Flask(__name__)
 
+
+app = Flask(__name__)
+app.secret_key = os.urandom(24)  # Gera uma chave secreta aleatória
+
 @app.route('/', methods=["GET", "POST"])
 def home():
     if request.method == "POST":
@@ -38,8 +42,10 @@ def home():
                         'data_fim': data_fim
                     }
                     response = supabase.table('atividade').insert(book).execute()
-
-                    # Verificar se a inserção foi bem-sucedida
+                    if response.status_code == 201:
+                        flash("Registro inserido com sucesso.")
+                    else:
+                        flash("Erro ao inserir registro: " + str(response.data))
 
             except Exception as e:
                 flash("Erro ao processar a solicitação: " + str(e))
@@ -74,7 +80,10 @@ def update():
                 'data_fim': newdata_fim
             }).eq('title', oldtitle).execute()
 
-
+            if response.status_code == 200:
+                flash("Registro atualizado com sucesso.")
+            else:
+                flash("Erro ao atualizar registro: " + str(response.data))
 
         except Exception as e:
             flash("Erro ao processar a atualização: " + str(e))
@@ -88,6 +97,10 @@ def delete():
         try:
             # Deletando o registro no Supabase
             response = supabase.table('atividade').delete().eq('title', title).execute()
+            if response.status_code == 200:
+                flash("Registro deletado com sucesso.")
+            else:
+                flash("Erro ao deletar registro: " + str(response.data))
 
         except Exception as e:
             flash("Erro ao processar a exclusão: " + str(e))
