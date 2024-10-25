@@ -25,13 +25,13 @@ def home():
                 'data_inicio': data_inicio,
                 'data_fim': data_fim
             }
-            supabase.table('Atv').insert(book).execute()
+            supabase.table('atv').insert(book).execute()
         except Exception as e:
             print("Failed to add book")
             print(e)
 
     # Consultando todos os livros
-    response = supabase.table('Atv').select('*').execute()
+    response = supabase.table('atv').select('*').execute()
     books = response.data
 
     return render_template("index.html", books=books)
@@ -46,7 +46,7 @@ def update():
         newdata_fim = datetime.strptime(request.form.get("newdata_fim"), '%Y-%m-%d').date()
         
         # Atualizando o registro no Supabase
-        supabase.table('Atv').update({
+        supabase.table('atv').update({
             'title': newtitle,
             'descricao': newdescricao,
             'data_inicio': newdata_inicio,
@@ -61,7 +61,7 @@ def update():
 def delete():
     title = request.form.get("title")
     # Deletando o registro no Supabase
-    supabase.table('Atv').delete().eq('title', title).execute()
+    supabase.table('atv').delete().eq('title', title).execute()
     return redirect("/")
 
 if __name__ == "__main__":
