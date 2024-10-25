@@ -13,66 +13,48 @@ app = Flask(__name__)
 @app.route('/', methods=["GET", "POST"])
 def home():
     if request.method == "POST":
-        try:
-            # Convertendo as strings de data para objetos de data
-            data_inicio = datetime.strptime(request.form.get("data_inicio"), '%Y-%m-%d').date()
-            data_fim = datetime.strptime(request.form.get("data_fim"), '%Y-%m-%d').date()
-            
-            # Inserindo o registro no Supabase
-            book = {
-                'title': request.form.get("title"),
-                'descricao': request.form.get("descricao"),
-                'data_inicio': data_inicio,
-                'data_fim': data_fim
-            }
-            response = supabase.table('atividade').insert(book).execute()
-            if response.status_code != 201:
-                print("Erro ao adicionar livro:", response.data)
-        except Exception as e:
-            print("Falha ao adicionar livro")
-            print(e)
+        # Convertendo as strings de data para objetos de data
+        data_inicio = datetime.strptime(request.form.get("data_inicio"), '%Y-%m-%d').date()
+        data_fim = datetime.strptime(request.form.get("data_fim"), '%Y-%m-%d').date()
+        
+        # Inserindo o registro no Supabase
+        book = {
+            'title': request.form.get("title"),
+            'descricao': request.form.get("descricao"),
+            'data_inicio': data_inicio.isoformat(),  # Converte para string ISO
+            'data_fim': data_fim.isoformat()  # Converte para string ISO
+        }
+        supabase.table('atividade').insert(book).execute()
 
     # Consultando todos os livros
     response = supabase.table('atividade').select('*').execute()
-    if response.status_code != 200:
-        print("Erro ao consultar livros:", response.data)
-        books = []
-    else:
-        books = response.data
+    books = response.data
 
     return render_template("index.html", books=books)
 
 @app.route("/update", methods=["POST"])
 def update():
-    try:
-        newtitle = request.form.get("newtitle")
-        oldtitle = request.form.get("oldtitle")
-        newdescricao = request.form.get("newdescricao")
-        newdata_inicio = datetime.strptime(request.form.get("newdata_inicio"), '%Y-%m-%d').date()
-        newdata_fim = datetime.strptime(request.form.get("newdata_fim"), '%Y-%m-%d').date()
-        
-        # Atualizando o registro no Supabase
-        response = supabase.table('atividade').update({
-            'title': newtitle,
-            'descricao': newdescricao,
-            'data_inicio': newdata_inicio,
-            'data_fim': newdata_fim
-        }).eq('title', oldtitle).execute()
+    newtitle = request.form.get("newtitle")
+    oldtitle = request.form.get("oldtitle")
+    newdescricao = request.form.get("newdescricao")
+    newdata_inicio = datetime.strptime(request.form.get("newdata_inicio"), '%Y-%m-%d').date()
+    newdata_fim = datetime.strptime(request.form.get("newdata_fim"), '%Y-%m-%d').date()
+    
+    # Atualizando o registro no Supabase
+    supabase.table('atividade').update({
+        'title': newtitle,
+        'descricao': newdescricao,
+        'data_inicio': newdata_inicio.isoformat(),  # Converte para string ISO
+        'data_fim': newdata_fim.isoformat()  # Converte para string ISO
+    }).eq('title', oldtitle).execute()
 
-        if response.status_code != 200:
-            print("Erro ao atualizar livro:", response.data)
-    except Exception as e:
-        print("Falha ao atualizar o título do livro")
-        print(e)
     return redirect("/")
 
 @app.route("/delete", methods=["POST"])
 def delete():
     title = request.form.get("title")
     # Deletando o registro no Supabase
-    response = supabase.table('atividade').delete().eq('title', title).execute()
-    if response.status_code != 200:
-        print("Erro ao deletar livro:", response.data)
+    supabase.table('atividade').delete().eq('title', title).execute()
     return redirect("/")
 
 if __name__ == "__main__":
