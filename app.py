@@ -9,9 +9,6 @@ key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVx
 supabase = create_client(url, key)
 
 app = Flask(__name__)
-
-
-app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Gera uma chave secreta aleatória
 
 @app.route('/', methods=["GET", "POST"])
